@@ -26,6 +26,12 @@ The core innovation of AgentScraper is its ability to "see" the web in two dimen
 *   **Token Tracking**: Real-time monitoring of AI token consumption to help you manage costs.
 *   **Stealth Mode**: Built on Playwright with custom headers to mimic real user behavior.
 
+## ⚡ Quick Start
+
+1. **Setup**: Clone the repo and update `appsettings.json` with your OpenAI/Azure keys.
+2. **Install Browsers**: Run `pwsh bin/Debug/net10.0/playwright.ps1 install` (if Playwright complains).
+3. **Run**: `dotnet run` and visit `http://localhost:5000`.
+
 ## 📖 Usage Guide
 
 1. **Enter Target URL**: The site you want to scrape.

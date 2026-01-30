@@ -39,4 +39,4 @@ The core innovation of AgentScraper is its ability to "see" the web in two dimen
 
 
 ---
-*Created by the AgentScraper Team*
+*Created by breezy89757*

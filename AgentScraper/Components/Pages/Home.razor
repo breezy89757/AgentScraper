@@ -1,0 +1,53 @@
+@page "/"
+@rendermode InteractiveServer
+
+<PageTitle>AI 網頁爬蟲 - 首頁</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-8">
+    <MudGrid>
+        <MudItem xs="12">
+            <MudPaper Height="250px" Class="d-flex flex-column align-center justify-center mud-width-full py-8 deep-purple darken-4">
+                <MudIcon Icon="@Icons.Material.Filled.AutoFixHigh" Size="Size.Large" Style="font-size: 6rem; color: white;" />
+                <MudText Typo="Typo.h3" Class="mt-4" Style="color: white; font-weight: bold;">AI 網頁資料擷取助手</MudText>
+                <MudText Typo="Typo.h6" Class="mt-2" Style="color: rgba(255,255,255,0.8);">無需寫程式，讓 AI 幫您整理網頁資訊</MudText>
+            </MudPaper>
+        </MudItem>
+        
+        <MudItem xs="12" md="10" Class="mx-auto mt-6">
+            <MudCard Elevation="3">
+                <MudCardHeader>
+                    <CardHeaderContent>
+                        <MudText Typo="Typo.h5" Color="Color.Primary">立即開始</MudText>
+                    </CardHeaderContent>
+                </MudCardHeader>
+                <MudCardContent>
+                    <MudText Typo="Typo.body1" Class="mb-4">
+                        只要三個步驟，輕鬆取得您要的資料：
+                    </MudText>
+                    <MudTimeline TimelineOrientation="TimelineOrientation.Horizontal" TimelinePosition="TimelinePosition.Bottom">
+                        <MudTimelineItem Color="Color.Info" Elevation="25">
+                            <ItemContent>
+                                <MudAlert Severity="Severity.Info">1. 輸入網址</MudAlert>
+                            </ItemContent>
+                        </MudTimelineItem>
+                        <MudTimelineItem Color="Color.Success" Elevation="25">
+                            <ItemContent>
+                                <MudAlert Severity="Severity.Success">2. 描述需求</MudAlert>
+                            </ItemContent>
+                        </MudTimelineItem>
+                        <MudTimelineItem Color="Color.Warning" Elevation="25">
+                            <ItemContent>
+                                <MudAlert Severity="Severity.Warning">3. 取得資料</MudAlert>
+                            </ItemContent>
+                        </MudTimelineItem>
+                    </MudTimeline>
+                </MudCardContent>
+                <MudCardActions Class="d-flex justify-center pa-6">
+                    <MudButton Href="/scrape" Variant="Variant.Filled" Color="Color.Primary" Size="Size.Large" EndIcon="@Icons.Material.Filled.ArrowForward">
+                        前往擷取工具
+                    </MudButton>
+                </MudCardActions>
+            </MudCard>
+        </MudItem>
+    </MudGrid>
+</MudContainer>

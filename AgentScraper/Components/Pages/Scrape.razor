@@ -1,0 +1,123 @@
+@page "/scrape"
+@rendermode InteractiveServer
+@using AgentScraper.Models
+@using AgentScraper.Services.Scraper
+@inject ScraperOrchestrator Scraper
+@inject ISnackbar Snackbar
+
+<PageTitle>開始抓取</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-8">
+    <MudText Typo="Typo.h3" GutterBottom="true" Align="Align.Center">網頁資料擷取助手</MudText>
+    <MudText Typo="Typo.subtitle1" Align="Align.Center" Class="mb-8">輸入網址與需求，AI 自動為您整理資料</MudText>
+
+    <MudGrid>
+        <MudItem xs="12" md="8" Class="mx-auto">
+            <MudCard Elevation="4" Class="pa-4">
+                <MudCardContent>
+                    <MudForm @ref="form" @bind-IsValid="@success">
+                        <MudTextField @bind-Value="url" Label="目標網址 (Target URL)" Variant="Variant.Outlined" Required="true" RequiredError="請輸入網址！" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Link" Class="mb-4" />
+                        
+                        <MudTextField @bind-Value="query" Label="您想要擷取什麼資料？(例如：抓取所有產品價格並整理成表格)" 
+                                      Variant="Variant.Outlined" Lines="3" Required="true" RequiredError="請輸入您的需求！" Class="mb-4" />
+                        
+                        <MudSwitch @bind-Value="useVisualMode" Color="Color.Primary" Label="開啟視覺輔助模式 (Visual Mode) - 適合處理圖表或複雜結構，但消耗較多 Token" />
+                    </MudForm>
+                </MudCardContent>
+                <MudCardActions Class="d-flex justify-center">
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Large" OnClick="ProcessAsync" Disabled="@(processing || !success)" StartIcon="@(processing ? Icons.Material.Filled.Loop : Icons.Material.Filled.PlayArrow)">
+                        @(processing ? "處理中..." : "開始擷取")
+                    </MudButton>
+                </MudCardActions>
+            </MudCard>
+        </MudItem>
+    </MudGrid>
+
+    @if (result != null)
+    {
+        <MudGrid Class="mt-8">
+            <MudItem xs="12">
+                <MudCard Elevation="4">
+                    <MudCardHeader>
+                        <CardHeaderContent>
+                            <MudText Typo="Typo.h5">執行結果</MudText>
+                            @if (tokenUsage > 0)
+                            {
+                                <MudChip T="string" Color="Color.Info" Size="Size.Small" Icon="@Icons.Material.Filled.Token" Class="ml-4">Token 使用量: @tokenUsage</MudChip>
+                            }
+                        </CardHeaderContent>
+                    </MudCardHeader>
+                    <MudCardContent>
+                        <MudPaper Class="pa-4" Style="background-color: #1e1e1e; color: #d4d4d4;">
+                            <pre style="white-space: pre-wrap;">@result</pre>
+                        </MudPaper>
+                        
+                        @if (!string.IsNullOrEmpty(debugHtml) || !string.IsNullOrEmpty(debugScreenshot))
+                        {
+                            <MudExpansionPanels Class="mt-4">
+                                <MudExpansionPanel Text="查看 AI 讀到的原始內容 (Debug View)" Icon="@Icons.Material.Filled.BugReport">
+                                    <MudStack Spacing="2">
+                                        @if (!string.IsNullOrEmpty(debugScreenshot))
+                                        {
+                                            <MudText Typo="Typo.subtitle2">視覺快照 (Visual Snapshot)</MudText>
+                                            <MudImage Src="@($"data:image/jpeg;base64,{debugScreenshot}")" Fluid="true" Class="rounded-lg mb-2" Style="max-height: 400px; object-fit: contain;"/>
+                                        }
+                                        
+                                        @if (!string.IsNullOrEmpty(debugHtml))
+                                        {
+                                             <MudText Typo="Typo.subtitle2">HTML 結構 (Simplified)</MudText>
+                                            <MudPaper Class="pa-4" Style="background-color: #f5f5f5; max-height: 400px; overflow: auto;">
+                                               <pre style="font-size: 0.8em; color: #333;">@debugHtml</pre>
+                                            </MudPaper>
+                                        }
+                                    </MudStack>
+                                </MudExpansionPanel>
+                            </MudExpansionPanels>
+                        }
+                    </MudCardContent>
+                </MudCard>
+            </MudItem>
+        </MudGrid>
+    }
+</MudContainer>
+
+@code {
+    bool success;
+    MudForm form = default!;
+    bool processing = false;
+    string url = "https://example.com";
+    string query = "";
+    string? result;
+    string? debugHtml;
+    string? debugScreenshot;
+    int tokenUsage = 0;
+    bool useVisualMode = false;
+
+    private async Task ProcessAsync()
+    {
+        processing = true;
+        result = null;
+        tokenUsage = 0;
+        try
+        {
+            // Only Extract Logic
+            // Only Extract Logic
+            var extraction = await Scraper.ExtractDataAsync(url, query, useVisualMode);
+            result = extraction.Data;
+            tokenUsage = extraction.TokenUsage;
+            debugHtml = extraction.DebugHtml;
+            debugScreenshot = extraction.DebugScreenshotBase64;
+            
+            Snackbar.Add("資料擷取完成！", Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            result = $"發生錯誤: {ex.Message}";
+            Snackbar.Add($"擷取失敗: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            processing = false;
+        }
+    }
+}

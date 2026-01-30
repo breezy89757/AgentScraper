@@ -1,0 +1,3 @@
+# Mark Blazor files as C# for GitHub language detection
+*.razor linguist-language=C#
+*.razor.cs linguist-language=C#

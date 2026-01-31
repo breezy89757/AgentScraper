@@ -16,7 +16,7 @@ public class PlaywrightService : IAsyncDisposable
         return data.Html;
     }
 
-    public async Task<PageData> FetchPageDataAsync(string url, bool captureScreenshot = false)
+    public async Task<PageData> FetchPageDataAsync(string url, bool captureScreenshot = false, string? waitSelector = null)
     {
         if (_playwright == null)
         {
@@ -37,8 +37,23 @@ public class PlaywrightService : IAsyncDisposable
             // Wait for network idle
             await page.GotoAsync(url, new PageGotoOptions { WaitUntil = WaitUntilState.NetworkIdle, Timeout = 30000 });
             
-            // Add a small fixed delay (3s) to catch delayed scripts (e.g., setTimeout(..., 1000)) that run AFTER load
-            // This is crucial for simple universal scraping of "delayed start" SPAs
+            // Explicit Wait Selector (if provided by Recipe)
+            if (!string.IsNullOrEmpty(waitSelector))
+            {
+                try 
+                {
+                    // Wait up to 10s for the specific element
+                    await page.WaitForSelectorAsync(waitSelector, new PageWaitForSelectorOptions { Timeout = 10000 });
+                }
+                catch
+                {
+                    // Fallback: If selector not found, continue anyway
+                    Console.WriteLine($"Warning: WaitSelector '{waitSelector}' timeout.");
+                }
+            }
+
+            // Always add a small fixed delay (3s) to catch multiple staggered timeouts (e.g., several setTimeout calls)
+            // This ensures robustness for sites like SinoPac that have multiple 1000ms delays
             await page.WaitForTimeoutAsync(3000);
             
             var content = await page.ContentAsync();

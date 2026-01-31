@@ -13,6 +13,7 @@ builder.Services.AddMudServices();
 
 // Domain Services
 builder.Services.AddScoped<PlaywrightService>();
+builder.Services.AddSingleton<RecipeService>();
 builder.Services.AddScoped<DomParserService>();
 builder.Services.AddScoped<ScraperOrchestrator>();
 

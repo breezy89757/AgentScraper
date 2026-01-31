@@ -1,0 +1,35 @@
+@using AgentScraper.Models
+@using MudBlazor
+
+<MudDialog>
+    <DialogContent>
+        <MudStack Spacing="4">
+            <MudField Label="網址模式 (URL Pattern)" Variant="Variant.Outlined" InnerPadding="false">
+                <code class="pa-2 d-block">@Skill.UrlPattern</code>
+            </MudField>
+            
+            @if (!string.IsNullOrEmpty(Skill.WaitSelector))
+            {
+                <MudField Label="載入等待元素 (Wait Selector)" Variant="Variant.Outlined" InnerPadding="false">
+                    <code class="pa-2 d-block">@Skill.WaitSelector</code>
+                </MudField>
+            }
+
+            <MudText Typo="Typo.h6">擷取策略 (Markdown Content)</MudText>
+            <MudPaper Outlined="true" Class="pa-4" Style="background-color: #fcfcfc; max-height: 400px; overflow: auto;">
+                <pre style="white-space: pre-wrap; font-family: 'Roboto Mono', monospace; font-size: 0.9rem;">@Skill.SkillDefinition</pre>
+            </MudPaper>
+        </MudStack>
+    </DialogContent>
+    <DialogActions>
+        <MudButton Color="Color.Primary" OnClick="Submit">關閉</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = default!;
+
+    [Parameter] public Recipe Skill { get; set; } = new();
+
+    private void Submit() => MudDialog.Close(DialogResult.Ok(true));
+}

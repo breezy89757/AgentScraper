@@ -6,4 +6,6 @@ public class ScrapeResult
     public int TokenUsage { get; set; }
     public string? DebugHtml { get; set; }
     public string? DebugScreenshotBase64 { get; set; }
+
+    public string? UsedRecipeName { get; set; }
 }

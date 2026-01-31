@@ -3,6 +3,7 @@
 @using AgentScraper.Models
 @using AgentScraper.Services.Scraper
 @inject ScraperOrchestrator Scraper
+@inject RecipeService RecipeService
 @inject ISnackbar Snackbar
 
 <PageTitle>開始抓取</PageTitle>
@@ -16,12 +17,17 @@
             <MudCard Elevation="4" Class="pa-4">
                 <MudCardContent>
                     <MudForm @ref="form" @bind-IsValid="@success">
-                        <MudTextField @bind-Value="url" Label="目標網址 (Target URL)" Variant="Variant.Outlined" Required="true" RequiredError="請輸入網址！" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Link" Class="mb-4" />
+                        <MudTextField @bind-Value="url" Label="目標網址 (Target URL)" Variant="Variant.Outlined" Required="true" RequiredError="請輸入網址！" 
+                                      Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Link" Class="mb-4" Immediate="true" />
                         
                         <MudTextField @bind-Value="query" Label="您想要擷取什麼資料？(例如：抓取所有產品價格並整理成表格)" 
-                                      Variant="Variant.Outlined" Lines="3" Required="true" RequiredError="請輸入您的需求！" Class="mb-4" />
+                                      Variant="Variant.Outlined" Lines="3" Required="true" RequiredError="請輸入您的需求！" Class="mb-4" Immediate="true" />
                         
-                        <MudSwitch @bind-Value="useVisualMode" Color="Color.Primary" Label="開啟視覺輔助模式 (Visual Mode) - 適合處理圖表或複雜結構，但消耗較多 Token" />
+                        <MudStack Row="true" AlignItems="AlignItems.Center">
+                            <MudSwitch @bind-Value="useVisualMode" Color="Color.Primary" Label="視覺輔助 (Visual Mode)" />
+                            <MudSpacer />
+                            <MudSwitch @bind-Value="autoMatch" Color="Color.Secondary" Label="自動匹配技能 (Auto-Match Skills)" />
+                        </MudStack>
                     </MudForm>
                 </MudCardContent>
                 <MudCardActions Class="d-flex justify-center">
@@ -41,11 +47,28 @@
                     <MudCardHeader>
                         <CardHeaderContent>
                             <MudText Typo="Typo.h5">執行結果</MudText>
-                            @if (tokenUsage > 0)
-                            {
-                                <MudChip T="string" Color="Color.Info" Size="Size.Small" Icon="@Icons.Material.Filled.Token" Class="ml-4">Token 使用量: @tokenUsage</MudChip>
-                            }
+                            <MudStack Row="true" AlignItems="AlignItems.Center" Class="mt-2">
+                                @if (tokenUsage > 0)
+                                {
+                                    <MudChip T="string" Color="Color.Info" Size="Size.Small" Icon="@Icons.Material.Filled.Token">Token: @tokenUsage</MudChip>
+                                }
+                                @if (!string.IsNullOrEmpty(usedRecipeName))
+                                {
+                                    <MudChip T="string" Color="Color.Success" Size="Size.Small" Icon="@Icons.Material.Filled.AutoFixHigh">Used Skill: @usedRecipeName</MudChip>
+                                }
+                            </MudStack>
                         </CardHeaderContent>
+                        <CardHeaderActions>
+                             @if (string.IsNullOrEmpty(usedRecipeName))
+                             {
+                                <MudTooltip Text="將此次成功的爬抓邏輯轉化為固定 Skill，下次執行更快更穩！">
+                                    <MudButton Variant="Variant.Outlined" Color="Color.Secondary" StartIcon="@Icons.Material.Filled.Science" 
+                                               OnClick="CrystalizeRecipeAsync" Disabled="@isCrystalizing">
+                                        @(isCrystalizing ? "固化中..." : "Crystalize Skill")
+                                    </MudButton>
+                                </MudTooltip>
+                             }
+                        </CardHeaderActions>
                     </MudCardHeader>
                     <MudCardContent>
                         <MudPaper Class="pa-4" Style="background-color: #1e1e1e; color: #d4d4d4;">
@@ -85,30 +108,110 @@
     bool success;
     MudForm form = default!;
     bool processing = false;
+    bool isCrystalizing = false;
     string url = "https://example.com";
     string query = "";
     string? result;
     string? debugHtml;
     string? debugScreenshot;
+    string? usedRecipeName;
     int tokenUsage = 0;
     bool useVisualMode = false;
+    bool autoMatch = true;
+
+    [Parameter]
+    [SupplyParameterFromQuery(Name = "skillId")]
+    public Guid? SkillId { get; set; }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (SkillId.HasValue)
+        {
+            // Ensure recipes are loaded if arriving directly via URL
+            if (!RecipeService.GetAllRecipes().Any())
+            {
+                await RecipeService.LoadRecipesAsync();
+            }
+
+            var recipe = RecipeService.GetAllRecipes().FirstOrDefault(r => r.Id == SkillId.Value);
+            if (recipe != null)
+            {
+                // Prioritize DiscoveryUrl if available for a clean pre-fill
+                if (!string.IsNullOrEmpty(recipe.DiscoveryUrl))
+                {
+                    url = recipe.DiscoveryUrl;
+                }
+                else 
+                {
+                    // Fallback to unescaping the pattern
+                    var displayUrl = recipe.UrlPattern
+                        .Replace(@"\.", ".")
+                        .Replace(@"\/", "/")
+                        .Replace(@"\:", ":")
+                        .Replace(@"\?", "?");
+                    
+                    if (Uri.IsWellFormedUriString(displayUrl, UriKind.Absolute) && !displayUrl.Contains("*") && !displayUrl.Contains("("))
+                    {
+                        url = displayUrl;
+                    }
+                }
+                
+                // If query is empty, try to hint or pre-fill
+                if (string.IsNullOrWhiteSpace(query))
+                {
+                    query = $"使用技能「{recipe.Name}」進行資料擷取";
+                }
+                
+                Snackbar.Add($"已掛載智慧技能: {recipe.Name}", Severity.Info);
+                
+                if (form != null)
+                {
+                    await form.Validate();
+                }
+                StateHasChanged(); // Ensure UI updates immediately
+            }
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (SkillId.HasValue && form != null)
+        {
+            // First pass
+            await form.Validate();
+            
+            if (!success)
+            {
+                // Second pass if needed (Blazor timing is tricky)
+                await Task.Delay(100);
+                await form.Validate();
+                StateHasChanged();
+            }
+        }
+    }
 
     private async Task ProcessAsync()
     {
+        Console.WriteLine("ProcessAsync started...");
+        Snackbar.Add("開始擷取...", Severity.Info);
         processing = true;
         result = null;
+        usedRecipeName = null;
         tokenUsage = 0;
         try
         {
-            // Only Extract Logic
-            // Only Extract Logic
-            var extraction = await Scraper.ExtractDataAsync(url, query, useVisualMode);
+            var extraction = await Scraper.ExtractDataAsync(url, query, useVisualMode, SkillId, !autoMatch);
             result = extraction.Data;
             tokenUsage = extraction.TokenUsage;
             debugHtml = extraction.DebugHtml;
             debugScreenshot = extraction.DebugScreenshotBase64;
+            usedRecipeName = extraction.UsedRecipeName;
             
             Snackbar.Add("資料擷取完成！", Severity.Success);
+            if (!string.IsNullOrEmpty(usedRecipeName))
+            {
+                Snackbar.Add($"已生效執行技能: {usedRecipeName}", Severity.Info);
+            }
         }
         catch (Exception ex)
         {
@@ -118,6 +221,46 @@
         finally
         {
             processing = false;
+        }
+    }
+
+    private async Task CrystalizeRecipeAsync()
+    {
+        if (string.IsNullOrEmpty(result) || string.IsNullOrEmpty(debugHtml)) return;
+
+        isCrystalizing = true;
+        try
+        {
+            Snackbar.Add("正在分析網頁結構並生成 Skill Prompt...", Severity.Info);
+            
+            // Generate Recipe
+            var recipe = await Scraper.GenerateRecipeAsync(url, query, debugHtml, result);
+            
+            // Save Recipe
+            // Inject RecipeService here or use Scraper if it exposed it. 
+            // Better to inject RecipeService directly into page for generic usage (or move Save to Orchestrator).
+            // Since Orchestrator generates it but doesn't save it (in my previous code), I need to save it.
+            // Let's assume I inject RecipeService at top of file.
+            
+            // WAIT! I need to inject RecipeService. Let me fix the @inject block first in a separate edit or assume.
+            // I'll add the injection in this block if possible? No, replace_file_content replaces block.
+            // I will assume I can edit the top too. Actually, I can't edit top AND bottom in one block easily if they are far apart.
+            // I will implement logic assuming RecipeService is available, then add @inject in next step.
+            
+            // Actually, I can use [Inject] property injection or just modify top lines.
+            // Let's modify the whole file slightly or just this block and assume I add inject next.
+             await RecipeService.SaveRecipeAsync(recipe);
+
+            Snackbar.Add($"Recipe Crystalized! '{recipe.Name}' 已儲存。", Severity.Success);
+            usedRecipeName = recipe.Name; // Show it as used now
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Recipe 生成失敗: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            isCrystalizing = false;
         }
     }
 }

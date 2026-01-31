@@ -21,7 +21,12 @@ The core innovation of AgentScraper is its ability to "see" the web in two dimen
 *   **Smart Analysis**: Automatically identifies the best scraping strategy based on your natural language goal.
 *   **Token-Optimized**: A custom `DomParserService` cleans noise (scripts, styles, ads) from HTML before sending it to the AI, saving ~60% of tokens per request.
 
-### 3. Developer Experience
+### 3. Crystallized Skills **[NEW!]**
+*   **Knowledge Persistence**: After a successful AI extraction, "crystallized" the strategy into a permanent **Skill**.
+*   **Zero-Shot Execution**: Reuse skills for similar URLs to bypass AI reasoning costs and achieve near-instant results.
+*   **Skill Dashboard**: Browse, search, and manage your library of scraping skills.
+
+### 4. Developer Experience
 *   **Debug View**: Inspect exactly what the AI sees—both the simplified HTML code and the visual snapshot.
 *   **Token Tracking**: Real-time monitoring of AI token consumption to help you manage costs.
 *   **Stealth Mode**: Built on Playwright with custom headers to mimic real user behavior.
@@ -30,17 +35,25 @@ The core innovation of AgentScraper is its ability to "see" the web in two dimen
 
 1. **Setup**: Clone the repo and update `appsettings.json` with your OpenAI/Azure keys.
 2. **Install Browsers**: Run `pwsh bin/Debug/net10.0/playwright.ps1 install` (if Playwright complains).
-3. **Run**: `dotnet run` and visit `http://localhost:5000`.
+3. **Run**: `dotnet run` and visit `http://localhost:5250`.
 
 ## 📖 Usage Guide
 
 1. **Enter Target URL**: The site you want to scrape.
-2. **Define Goal**: Tell the AI what you want in natural language (e.g., *"Extract all stock prices and put them in a JSON list"*).
-3. **Select Mode**: 
+2. **Define Goal**: Tell the AI what you want in natural language.
+3. **Select Mode & Auto-Match**: 
    *   Toggle **Visual Mode** ON for visual-heavy sites.
-   *   Leave OFF for standard text-based sites (save $$).
-4. **Scrape**: Click the button and watch the magic happen.
-5. **Inspect**: Use the **Debug View** to verify the data sent to the AI.
+   *   Leave **Auto-Match Skills** ON (Default) to automatically reuse your saved skills.
+4. **Scrape & Crystallize**: If the result is perfect, click **"Crystalize Skill"** to save the logic.
+5. **Manage**: Visit **"My Skills"** to view details or manually trigger a skill for any URL.
+
+## 📝 Release Notes
+
+### v1.1 (2026-01-31) - Skill Transformation
+*   **Feature**: Introduced **"Crystallized Skills"** architecture.
+*   **UI**: Added **"My Skills"** Dashboard with dialog-based skill inspection.
+*   **Logic**: Added `RecipeService` for markdown-based skill persistence.
+*   **Fix**: Resolved form validation deadlocks and improved URL pre-fill from skills.
 
 
 

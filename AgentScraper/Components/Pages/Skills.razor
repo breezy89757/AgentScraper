@@ -1,0 +1,83 @@
+@page "/skills"
+@rendermode InteractiveServer
+@using AgentScraper.Models
+@using AgentScraper.Services.Scraper
+@inject RecipeService RecipeService
+@inject NavigationManager Navigation
+@inject IDialogService DialogService
+
+<PageTitle>我的技能 (My Skills)</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-8">
+    <MudText Typo="Typo.h3" GutterBottom="true" Align="Align.Center">我的技能 (My Skills)</MudText>
+    <MudText Typo="Typo.subtitle1" Align="Align.Center" Class="mb-8">管理並執行已固化的智慧擷取技能</MudText>
+
+    <MudTable Items="@skills" Filter="new Func<Recipe,bool>(FilterFunc1)" Hover="true" Bordered="true" Striped="true" Elevation="4">
+        <ToolBarContent>
+            <MudText Typo="Typo.h6">已儲存的技能</MudText>
+            <MudSpacer />
+            <MudTextField @bind-Value="searchString1" Placeholder="搜尋名稱或網址..." Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
+        </ToolBarContent>
+        <HeaderContent>
+            <MudTh>名稱</MudTh>
+            <MudTh>網址模式 (Regex)</MudTh>
+            <MudTh>建立時間</MudTh>
+            <MudTh>操作</MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd DataLabel="名稱">
+                <MudText Typo="Typo.body1" Color="Color.Primary"><b>@context.Name</b></MudText>
+            </MudTd>
+            <MudTd DataLabel="網址模式"><code>@context.UrlPattern</code></MudTd>
+            <MudTd DataLabel="建立時間">@context.CreatedAt.ToString("yyyy-MM-dd HH:mm")</MudTd>
+            <MudTd DataLabel="操作">
+                <MudStack Row="true" Spacing="2">
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.PlayArrow" OnClick="@(() => UseSkill(context))">使用</MudButton>
+                    <MudTooltip Text="查看技能內容">
+                        <MudIconButton Icon="@Icons.Material.Filled.Info" Color="Color.Info" OnClick="@(() => ShowSkill(context))" />
+                    </MudTooltip>
+                </MudStack>
+            </MudTd>
+        </RowTemplate>
+        <PagerContent>
+            <MudTablePager />
+        </PagerContent>
+    </MudTable>
+</MudContainer>
+
+@code {
+    private List<Recipe> skills = new();
+    private string searchString1 = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await RecipeService.LoadRecipesAsync();
+        skills = RecipeService.GetAllRecipes();
+    }
+
+    private bool FilterFunc1(Recipe element) => FilterFunc(element, searchString1);
+
+    private bool FilterFunc(Recipe element, string searchString)
+    {
+        if (string.IsNullOrWhiteSpace(searchString))
+            return true;
+        if (element.Name.Contains(searchString, StringComparison.OrdinalIgnoreCase))
+            return true;
+        if (element.UrlPattern.Contains(searchString, StringComparison.OrdinalIgnoreCase))
+            return true;
+        return false;
+    }
+
+    private void UseSkill(Recipe skill)
+    {
+        Navigation.NavigateTo($"/scrape?skillId={skill.Id}");
+    }
+
+    private async Task ShowSkill(Recipe skill)
+    {
+        var parameters = new DialogParameters<SkillDetailDialog> { { x => x.Skill, skill } };
+        var options = new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.Medium, FullWidth = true };
+        
+        await DialogService.ShowAsync<SkillDetailDialog>(skill.Name, parameters, options);
+    }
+}
